@@ -6,9 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
+interface DirectoryItem {
+  name: string;
+  type: 'directory' | 'file';
+  mtime?: string;
+}
+
 export const DirectoryViewer = () => {
   const [currentPath, setCurrentPath] = useState<string[]>([]);
-  const [items, setItems] = useState<{ name: string; type: 'directory' | 'file' }[]>([]);
+  const [items, setItems] = useState<DirectoryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchDirectory = async (path: string) => {
@@ -19,11 +25,16 @@ export const DirectoryViewer = () => {
         throw new Error('Failed to fetch directory');
       }
       const data = await response.json();
-      const transformedItems = Object.entries(data).map(([name, type]) => ({
+      
+      // Transform the API response into our DirectoryItem format
+      const transformedItems = Object.entries(data).map(([name, details]: [string, any]) => ({
         name,
-        type: type === 'directory' ? 'directory' as const : 'file' as const
+        type: details === 'directory' ? 'directory' : 'file',
+        mtime: details.mtime || undefined
       }));
+      
       setItems(transformedItems);
+      console.log('Fetched items:', transformedItems); // Debug log
     } catch (error) {
       console.error('Failed to fetch directory:', error);
       setItems([]);
@@ -36,7 +47,7 @@ export const DirectoryViewer = () => {
     fetchDirectory(currentPath.join('/'));
   }, [currentPath]);
 
-  const navigateToPath = (item: { name: string; type: 'directory' | 'file' }) => {
+  const navigateToPath = (item: DirectoryItem) => {
     if (item.type === 'directory') {
       setCurrentPath([...currentPath, item.name]);
     }
@@ -60,9 +71,12 @@ export const DirectoryViewer = () => {
               </Button>
             )}
             <div className="flex items-center">
+              <span className="text-sm font-mono text-muted-foreground">
+                /Recon/
+              </span>
               {currentPath.map((part, index) => (
                 <div key={index} className="flex items-center">
-                  {index > 0 && <ChevronRight className="w-4 h-4 mx-1 text-muted-foreground" />}
+                  <ChevronRight className="w-4 h-4 mx-1 text-muted-foreground" />
                   <span className="text-sm font-mono">{part}</span>
                 </div>
               ))}
@@ -85,7 +99,9 @@ export const DirectoryViewer = () => {
                 items.map((item) => (
                   <Card
                     key={item.name}
-                    className="directory-item p-4 cursor-pointer hover:bg-accent"
+                    className={`directory-item p-4 cursor-pointer hover:bg-accent transition-all duration-200 ${
+                      item.type === 'directory' ? 'hover:scale-[1.02]' : ''
+                    }`}
                     onClick={() => navigateToPath(item)}
                   >
                     <div className="flex items-center space-x-3">
@@ -94,7 +110,14 @@ export const DirectoryViewer = () => {
                       ) : (
                         <File className="w-5 h-5 text-muted-foreground" />
                       )}
-                      <span className="font-mono text-sm truncate">{item.name}</span>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-mono text-sm truncate">{item.name}</p>
+                        {item.mtime && (
+                          <p className="text-xs text-muted-foreground truncate">
+                            {new Date(item.mtime).toLocaleString()}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </Card>
                 ))
