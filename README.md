@@ -67,8 +67,8 @@ server {
         auth_basic_user_file /etc/nginx/.htpasswd;
     }
 
-    # API endpoint for directory listing with proper JSON format
-    location /api/directory/ {
+    # Serve the Recon directory with JSON format listing
+    location /Recon/ {
         alias /var/www/Recon-gan/Recon/;
         autoindex on;
         autoindex_format json;
@@ -77,7 +77,7 @@ server {
         auth_basic "Restricted Access";
         auth_basic_user_file /etc/nginx/.htpasswd;
 
-        # CORS headers if needed
+        # CORS headers
         add_header 'Access-Control-Allow-Origin' '*';
         add_header 'Access-Control-Allow-Methods' 'GET, OPTIONS';
         add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range';

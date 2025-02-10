@@ -14,7 +14,7 @@ export const DirectoryViewer = () => {
   const fetchDirectory = async (path: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/directory/${path}`);
+      const response = await fetch(`/Recon/${path}`);
       if (!response.ok) {
         throw new Error('Failed to fetch directory');
       }
