@@ -1,28 +1,33 @@
 
 import { useState, useEffect } from "react";
-import { Folder, ChevronRight, ArrowLeft } from "lucide-react";
+import { Folder, ChevronRight, ArrowLeft, File } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-interface DirectoryViewerProps {
-  onLogout: () => void;
-}
-
-export const DirectoryViewer = ({ onLogout }: DirectoryViewerProps) => {
+export const DirectoryViewer = () => {
   const [currentPath, setCurrentPath] = useState<string[]>([]);
-  const [items, setItems] = useState<string[]>([]);
+  const [items, setItems] = useState<{ name: string; type: 'directory' | 'file' }[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchDirectory = async (path: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`http://38.242.149.132/api/directory?path=${path}`);
+      const response = await fetch(`/api/directory?path=${path}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch directory');
+      }
       const data = await response.json();
-      setItems(data.items || []);
+      // Transform the data to include type information
+      const transformedItems = Object.entries(data).map(([name, type]: [string, any]) => ({
+        name,
+        type: type === 'directory' ? 'directory' : 'file'
+      }));
+      setItems(transformedItems);
     } catch (error) {
       console.error('Failed to fetch directory:', error);
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -32,8 +37,10 @@ export const DirectoryViewer = ({ onLogout }: DirectoryViewerProps) => {
     fetchDirectory(currentPath.join('/'));
   }, [currentPath]);
 
-  const navigateToPath = (path: string) => {
-    setCurrentPath([...currentPath, path]);
+  const navigateToPath = (item: { name: string; type: 'directory' | 'file' }) => {
+    if (item.type === 'directory') {
+      setCurrentPath([...currentPath, item.name]);
+    }
   };
 
   const navigateBack = () => {
@@ -43,12 +50,7 @@ export const DirectoryViewer = ({ onLogout }: DirectoryViewerProps) => {
   return (
     <div className="min-h-screen bg-background p-4 md:p-8 animate-fadeIn">
       <div className="max-w-7xl mx-auto space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-2xl font-semibold">Reconnaissance Results</h1>
-          <Button variant="outline" onClick={onLogout}>
-            Sign Out
-          </Button>
-        </div>
+        <h1 className="text-2xl font-semibold">Reconnaissance Results</h1>
 
         <Card className="p-4">
           <div className="flex items-center space-x-2 mb-4">
@@ -83,13 +85,17 @@ export const DirectoryViewer = ({ onLogout }: DirectoryViewerProps) => {
               ) : (
                 items.map((item) => (
                   <Card
-                    key={item}
+                    key={item.name}
                     className="directory-item p-4 cursor-pointer hover:bg-accent"
                     onClick={() => navigateToPath(item)}
                   >
                     <div className="flex items-center space-x-3">
-                      <Folder className="w-5 h-5 text-primary" />
-                      <span className="font-mono text-sm truncate">{item}</span>
+                      {item.type === 'directory' ? (
+                        <Folder className="w-5 h-5 text-primary" />
+                      ) : (
+                        <File className="w-5 h-5 text-muted-foreground" />
+                      )}
+                      <span className="font-mono text-sm truncate">{item.name}</span>
                     </div>
                   </Card>
                 ))
