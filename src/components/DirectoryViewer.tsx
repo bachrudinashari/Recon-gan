@@ -14,15 +14,14 @@ export const DirectoryViewer = () => {
   const fetchDirectory = async (path: string) => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/directory?path=${path}`);
+      const response = await fetch(`/api/directory/${path}`);
       if (!response.ok) {
         throw new Error('Failed to fetch directory');
       }
       const data = await response.json();
-      // Transform the data to include type information
-      const transformedItems = Object.entries(data).map(([name, type]: [string, any]) => ({
+      const transformedItems = Object.entries(data).map(([name, type]) => ({
         name,
-        type: type === 'directory' ? 'directory' : 'file'
+        type: type === 'directory' ? 'directory' as const : 'file' as const
       }));
       setItems(transformedItems);
     } catch (error) {
